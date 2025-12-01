@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Krish Love Calculator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Poppins",sans-serif;}
+body{height:100vh;display:flex;justify-content:center;align-items:center;background:#ff7aa2;overflow:hidden;position:relative;}
+
+/* Layers */
+.layer{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:column;background:#ffffffdd;transition:opacity 0.8s ease;}
+.hidden{opacity:0;pointer-events:none;}
+.visible{opacity:1;pointer-events:auto;}
+
+/* Heartbeat Loading Screen */
+#loadingScreen .loader{
+  font-size:2rem;
+  color:#ff006a;
+  font-weight:700;
+  text-shadow:0 0 10px #ff2e74;
+  animation: heartbeat 1s infinite;
+}
+@keyframes heartbeat{
+  0%,100%{ transform: scale(1);}
+  25%{ transform: scale(1.2);}
+  50%{ transform: scale(1);}
+  75%{ transform: scale(1.2);}
+}
+
+/* Floating hearts for loading */
+.loading-heart{
+  position:absolute;
+  font-size:20px;
+  color:#ff006a;
+  text-shadow:0 0 10px #ff2e74;
+  animation: floatUp 3s linear infinite, heartbeat 1s infinite;
+}
+@keyframes floatUp{0%{transform:translateY(0);opacity:1;}100%{transform:translateY(-400px);opacity:0;}}
+
+/* Start Screen */
+#startScreen button{
+  padding:20px 25px;
+  font-size:1.5rem;
+  background:#ff006a;
+  color:white;
+  border:none;
+  border-radius:15px;
+  cursor:pointer;
+  text-shadow:0 0 10px #ff2e74;
+  box-shadow:0 0 20px #ff2e74;
+  transition:.3s;
+}
+#startScreen button:hover{background:#ff004f;}
+
+/* Calculator Card */
+#calculatorCard{
+  background:#ffffffd9;
+  padding:35px;
+  width:350px;
+  border-radius:25px;
+  text-align:center;
+  box-shadow:0 0 40px #ff2e74;
+  backdrop-filter: blur(10px);
+  opacity:0;
+  transform:translateY(30px);
+  transition:opacity 1s ease,transform 1s ease;
+}
+#calculatorCard.show{opacity:1;transform:translateY(0);}
+#calculatorCard h2{
+  color:#ff006a;
+  font-size:2rem;
+  margin-bottom:10px;
+  font-weight:700;
+  text-shadow:0 0 12px #ff2e74;
+}
+#calculatorCard input{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  font-size:1rem;
+  border:none;
+  outline:none;
+  border-radius:10px;
+  background:#ffd2e0;
+}
+
+/* Styled Calculator Button */
+#startBtn{
+  padding:15px 30px;
+  margin-top:15px;
+  font-size:1.4rem;
+  background: linear-gradient(45deg,#ff006a,#ff4a7a);
+  color:white;
+  border:none;
+  border-radius:15px;
+  cursor:pointer;
+  box-shadow:0 0 20px #ff2e74, 0 0 40px #ff7aa2 inset;
+  text-shadow:0 0 10px #ff2e74;
+  transition:0.3s all;
+}
+#startBtn:hover{
+  transform: scale(1.05);
+  box-shadow:0 0 25px #ff2e74, 0 0 50px #ff7aa2 inset;
+}
+
+/* Result and Meter */
+.result{margin-top:20px;font-size:1.6rem;color:#d30042;font-weight:700;text-shadow:0 0 15px #ff2e74;}
+.meter{margin-top:15px;width:100%;height:10px;background:#ffb4c8;border-radius:10px;overflow:hidden;display:none;}
+.meter-fill{height:100%;width:0;background:#ff006a;box-shadow:0 0 10px #ff2e74;transition:0.2s;}
+
+/* Floating hearts for result */
+.heart-float{position:absolute;color:#ff006a;font-size:25px;animation:floatUp 5s linear infinite;opacity:.8;text-shadow:0 0 15px #ff2e74;}
+.boom-heart{position:absolute;color:#ff006a;font-size:20px;animation:explode 0.8s ease-out forwards;text-shadow:0 0 10px #ff2e74;}
+@keyframes explode{0%{transform:scale(0) translate(0,0);opacity:1;}100%{transform:scale(2) translate(var(--x), var(--y));opacity:0;}}
+
+/* Background pulse */
+body::before{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle,#ff7aa2,#ff4a7a);animation:bgPulse 6s infinite alternate;z-index:-1;}
+@keyframes bgPulse{0%{filter:brightness(1);}100%{filter:brightness(1.2);}}
+</style>
+</head>
+<body>
+
+<audio id="music" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_f4e0a83d4c.mp3?filename=romantic-soft-piano-10896.mp3"></audio>
+
+<!-- Loading Layer -->
+<div id="loadingScreen" class="layer visible">
+  <div class="loader">💖 Loading Love Calculator... 💖</div>
+</div>
+
+<!-- Start Layer -->
+<div id="startScreen" class="layer hidden">
+  <button id="showCalculatorBtn">Start Love Calculator 💗</button>
+</div>
+
+<!-- Calculator Layer -->
+<div id="calculatorCard" class="hidden">
+  <h2>💗 Love Calculator 💗</h2>
+  <input type="text" id="name1" placeholder="Your Name">
+  <input type="text" id="name2" placeholder="Crush Name">
+  <button id="startBtn">Calculate 💖</button>
+  <div class="meter"><div class="meter-fill" id="fill"></div></div>
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+const loadingScreen = document.getElementById("loadingScreen");
+const startScreen = document.getElementById("startScreen");
+const calculatorCard = document.getElementById("calculatorCard");
+const showBtn = document.getElementById("showCalculatorBtn");
+const startBtn = document.getElementById("startBtn");
+const music = document.getElementById("music");
+
+// Function to spawn floating hearts during loading
+function spawnLoadingHearts(){
+  for(let i=0;i<5;i++){
+    const h=document.createElement("div");
+    h.className="loading-heart";
+    h.innerHTML="💗";
+    h.style.left=Math.random()*100+"vw";
+    h.style.fontSize=(Math.random()*15+15)+"px";
+    h.style.animationDuration=(Math.random()*1+2)+"s";
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(),3000);
+  }
+}
+let loadingInterval = setInterval(spawnLoadingHearts, 400);
+
+// Automatically transition from Loading → Start after 3 seconds
+setTimeout(() => {
+  clearInterval(loadingInterval);
+  loadingScreen.classList.remove("visible");
+  loadingScreen.classList.add("hidden");
+  startScreen.classList.remove("hidden");
+  startScreen.classList.add("visible");
+}, 3000);
+
+// Start → show Calculator
+showBtn.addEventListener("click", () => {
+  startScreen.classList.remove("visible");
+  startScreen.classList.add("hidden");
+  setTimeout(() => {
+    calculatorCard.classList.remove("hidden");
+    calculatorCard.classList.add("show");
+  }, 800);
+});
+
+// Love Calculator logic
+startBtn.addEventListener("click", startLove);
+function startLove(){
+  const n1=document.getElementById("name1").value.trim();
+  const n2=document.getElementById("name2").value.trim();
+  const result=document.getElementById("result");
+  const fill=document.getElementById("fill");
+  const meter=document.querySelector(".meter");
+  if(!n1||!n2){result.textContent="Enter both names 😭";return;}
+  music.play();
+  startBtn.disabled=true; startBtn.style.cursor="not-allowed";
+  meter.style.display="block"; fill.style.width="0%";
+  let progress=0;
+  let loading=setInterval(()=>{
+    progress+=3; fill.style.width=progress+"%";
+    if(progress>=100){clearInterval(loading); showResult();}
+  },40);
+  explodeHearts();
+}
+
+function showResult(){
+  const result=document.getElementById("result");
+  const percent=Math.floor(Math.random()*51)+50;
+  result.textContent=`Love Match: ${percent}% 💖`;
+  spawnFloatingHearts();
+}
+
+function spawnFloatingHearts(){
+  for(let i=0;i<10;i++){
+    const h=document.createElement("div");
+    h.className="heart-float";
+    h.innerHTML="💗";
+    h.style.left=Math.random()*100+"vw";
+    h.style.fontSize=(Math.random()*20+25)+"px";
+    h.style.animationDuration=(Math.random()*2+4)+"s";
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(),5000);
+  }
+}
+
+function explodeHearts(){
+  for(let i=0;i<15;i++){
+    const b=document.createElement("div");
+    b.className="boom-heart";
+    b.innerHTML="💖";
+    b.style.left="50vw"; b.style.top="50vh";
+    b.style.setProperty('--x',(Math.random()*200-100)+"px");
+    b.style.setProperty('--y',(Math.random()*200-100)+"px");
+    document.body.appendChild(b);
+    setTimeout(()=>b.remove(),800);
+  }
+}
+</script>
+
+
+</body>
+</html>
